@@ -7,8 +7,10 @@
     }
     @{
         var rootCategories = Model.Categories.Where(x => x.IncludeInTopMenu).ToList();
+        var baseCategory = new CategorySimpleModel() { Name = "Products", SubCategories = rootCategories, IncludeInTopMenu = true, Id = 0 };
+        var categoryList = new List<CategorySimpleModel>() { baseCategory };
     }
-    @foreach (var category in rootCategories)
+    @foreach (var category in categoryList)
     {
         var categoryLineModel = new TopMenuModel.CategoryLineModel
         {

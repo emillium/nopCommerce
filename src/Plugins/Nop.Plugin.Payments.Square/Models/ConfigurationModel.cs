@@ -4,7 +4,7 @@ using FluentValidation.Attributes;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Nop.Plugin.Payments.Square.Validators;
 using Nop.Web.Framework.Mvc.ModelBinding;
-using Nop.Web.Framework.Mvc.Models;
+using Nop.Web.Framework.Models;
 
 namespace Nop.Plugin.Payments.Square.Models
 {
@@ -39,6 +39,8 @@ namespace Nop.Plugin.Payments.Square.Models
         public string AccessToken { get; set; }
 
         [NopResourceDisplayName("Plugins.Payments.Square.Fields.SandboxAccessToken")]
+        [DataType(DataType.Password)]
+        [NoTrim]
         public string SandboxAccessToken { get; set; }
 
         [NopResourceDisplayName("Plugins.Payments.Square.Fields.UseSandbox")]

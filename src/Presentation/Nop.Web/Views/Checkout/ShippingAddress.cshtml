@@ -27,7 +27,7 @@
                     </div>
                     <script asp-location="Footer">
                         $(document).ready(function() {
-                            $("#@Html.IdFor(model => model.PickUpInStore)").change(togglePickUpInStore);
+                            $("#@Html.IdFor(model => model.PickUpInStore)").on('change', togglePickUpInStore);
                             togglePickUpInStore();
                         });
 
@@ -135,7 +135,7 @@
                                                                 map: googleMap,
                                                                 title: "@point.Name",
                                                                 position: new google.maps.LatLng(@point.Latitude, @point.Longitude),
-                                                                icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                                                                icon: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
                                                             });
                                                             markers.set("@value", marker);
                                                             google.maps.event.addListener(marker, 'click', function () {
@@ -161,7 +161,7 @@
                                                                         map: googleMap,
                                                                         title: "@point.Name",
                                                                         position: results[0].geometry.location,
-                                                                        icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                                                                        icon: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
                                                                     });
                                                                     markers.set("@value", marker);
                                                                     google.maps.event.addListener(marker, 'click', function () {
@@ -181,11 +181,11 @@
                                                 }
                                             }
 
-                                            $('#pickup-points-select').change(function() {
+                                                        $('#pickup-points-select').on('change', function() {
                                                 new google.maps.event.trigger(markers.get(this.value), 'click');
                                             });
 
-                                            $("#@Html.IdFor(model => model.PickUpInStore)").change(function() {
+                                            $("#@Html.IdFor(model => model.PickUpInStore)").on('change', function() {
                                                 if ($('#@Html.IdFor(model => model.PickUpInStore)').is(':checked')) {
                                                     var center = googleMap.getCenter();
                                                     google.maps.event.trigger(googleMap, 'resize');

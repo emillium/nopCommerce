@@ -1,10 +1,6 @@
-@model ShipmentListModel
-@inject AdminAreaSettings adminAreaSettings
+@model ShipmentSearchModel
 
 @{
-    var defaultGridPageSize = adminAreaSettings.DefaultGridPageSize;
-    var gridPageSizes = adminAreaSettings.GridPageSizes;
-
     //page title
     ViewBag.Title = T("Admin.Orders.Shipments.List").Text;
 
@@ -160,7 +156,21 @@
                                                 url: "@Html.Raw(Url.Action("ShipmentListSelect", "Order"))",
                                                 type: "POST",
                                                 dataType: "json",
-                                                data: additionalData
+                                                data: function() {
+                                                    var data = {
+                                                        StartDate: $('#@Html.IdFor(model => model.StartDate)').val(),
+                                                        EndDate: $('#@Html.IdFor(model => model.EndDate)').val(),
+                                                        TrackingNumber: $('#@Html.IdFor(model => model.TrackingNumber)').val(),
+                                                        CountryId: $('#@Html.IdFor(model => model.CountryId)').val(),
+                                                        StateProvinceId: $('#@Html.IdFor(model => model.StateProvinceId)').val(),
+                                                        County: $('#@Html.IdFor(model => model.County)').val(),
+                                                        City: $('#@Html.IdFor(model => model.City)').val(),
+                                                        WarehouseId: $('#@Html.IdFor(model => model.WarehouseId)').val(),
+                                                        LoadNotShipped: $('#@Html.IdFor(model => model.LoadNotShipped)').is(':checked')
+                                                    };
+                                                    addAntiForgeryToken(data);
+                                                    return data;
+                                                }
                                             }
                                         },
                                         schema: {
@@ -173,14 +183,14 @@
                                             // Cancel the changes
                                             this.cancelChanges();
                                         },
-                                        pageSize: @(defaultGridPageSize),
+                                        pageSize: @(Model.PageSize),
                                         serverPaging: true,
                                         serverFiltering: true,
                                         serverSorting: true
                                     },
                                     pageable: {
                                         refresh: true,
-                                        pageSizes: [@(gridPageSizes)],
+                                        pageSizes: [@(Model.AvailablePageSizes)],
                                         @await Html.PartialAsync("_GridPagerMessages")
                                     },
                                     //details grid
@@ -240,10 +250,16 @@
                                         type: "json",
                                         transport: {
                                             read: {
-                                                url: "@Html.Raw(Url.Action("ShipmentsItemsByShipmentId", "Order"))?shipmentId="+e.data.Id,
+                                                url: "@Html.Raw(Url.Action("ShipmentsItemsByShipmentId", "Order"))",
                                                 type: "POST",
                                                 dataType: "json",
-                                                data: addAntiForgeryToken
+                                                data: function() {
+                                                    var data = {
+                                                        ShipmentId: e.data.Id
+                                                    };
+                                                    addAntiForgeryToken(data);
+                                                    return data;
+                                                }
                                             }
                                         },
                                         schema: {
@@ -256,17 +272,15 @@
                                             // Cancel the changes
                                             this.cancelChanges();
                                         },
+                                        pageSize: @(Model.ShipmentItemSearchModel.PageSize),
                                         serverPaging: true,
                                         serverFiltering: true,
                                         serverSorting: true
                                     },
                                     scrollable: false,
-                                    sortable: true,
                                     pageable: {
                                         refresh: true,
-                                        numeric: false,
-                                        previousNext: false,
-                                        info: false,
+                                        pageSizes: [@(Model.ShipmentItemSearchModel.AvailablePageSizes)],
                                         @await Html.PartialAsync("_GridPagerMessages")
                                     },
                                     columns: [
@@ -318,18 +332,10 @@
                                     });
                                 },
                                 error: function(xhr, ajaxOptions, thrownError) {
-                                    alert('Failed to retrieve states.');
+                                    $("#statesAlert").click();
                                 }
                             });
                         });
-
-                        $("".concat("#@Html.IdFor(model => model.TrackingNumber),",
-                            "#@Html.IdFor(model => model.City)")).keydown(function(event) {
-                                if (event.keyCode === 13) {
-                                    $("#search-shipments").click();
-                                    return false;
-                                }
-                            });
 
                         //search button
                         $('#search-shipments').click(function() {
@@ -363,7 +369,8 @@
                                     grid.dataSource.read();
                                 },
                                 error: function(xhr, ajaxOptions, thrownError) {
-                                    alert(thrownError);
+                                    $('#setAsShippedSelectedFailed-info').html(thrownError);
+                                    $("#setAsShippedSelectedFailed").click();
                                 },
                                 traditional: true
                             });
@@ -390,7 +397,8 @@
                                     grid.dataSource.read();
                                 },
                                 error: function(xhr, ajaxOptions, thrownError) {
-                                    alert(thrownError);
+                                    $('#setAsDeliveredSelectedFailed-info').html(thrownError);
+                                    $("#setAsDeliveredSelectedFailed").click(); 
                                 },
                                 traditional: true
                             });
@@ -419,23 +427,7 @@
                             updateMasterCheckbox();
                         });
                     });
-
-                    function additionalData() {
-                        var data = {
-                            StartDate: $('#@Html.IdFor(model => model.StartDate)').val(),
-                            EndDate: $('#@Html.IdFor(model => model.EndDate)').val(),
-                            TrackingNumber: $('#@Html.IdFor(model => model.TrackingNumber)').val(),
-                            CountryId: $('#@Html.IdFor(model => model.CountryId)').val(),
-                            StateProvinceId: $('#@Html.IdFor(model => model.StateProvinceId)').val(),
-                            County: $('#@Html.IdFor(model => model.County)').val(),
-                            City: $('#@Html.IdFor(model => model.City)').val(),
-                            WarehouseId: $('#@Html.IdFor(model => model.WarehouseId)').val(),
-                            LoadNotShipped: $('#@Html.IdFor(model => model.LoadNotShipped)').is(':checked')
-                        };
-                        addAntiForgeryToken(data);
-                        return data;
-                    }
-
+                    
                     function onDataBound(e) {
                         $('#shipments-grid input[type=checkbox][id!=mastercheckbox][class=checkboxGroups]').each(function() {
                             var currentId = $(this).val();
@@ -462,6 +454,9 @@
 <form asp-controller="Order" asp-action="PdfPackagingSlipSelected" method="post" id="pdf-packaging-slip-selected-form">
     <input type="hidden" id="selectedIds" name="selectedIds" value="" />
 </form>
+<nop-alert asp-alert-id="statesAlert" asp-alert-message="@T("Admin.Common.Alert.States.Failed")" />
+<nop-alert asp-alert-id="setAsShippedSelectedFailed" />
+<nop-alert asp-alert-id="setAsDeliveredSelectedFailed" />
 
 <script>
                 $(document).ready(function () {

@@ -15,10 +15,16 @@
                                 type: "json",
                                 transport: {
                                     read: {
-                                        url: "@Html.Raw(Url.Action("ProductPictureList", "Product", new {productId = Model.Id}))",
+                                        url: "@Html.Raw(Url.Action("ProductPictureList", "Product"))",
                                         type: "POST",
                                         dataType: "json",
-                                        data: addAntiForgeryToken
+                                        data: function() {
+                                            var data = {
+                                                ProductId: '@(Model.Id)'
+                                            };
+                                            addAntiForgeryToken(data);
+                                            return data;
+                                        }
                                     },
                                     update: {
                                         url: "@Html.Raw(Url.Action("ProductPictureUpdate", "Product"))",
@@ -57,15 +63,14 @@
                                     // Cancel the changes
                                     this.cancelChanges();
                                 },
+                                pageSize: @(Model.ProductPictureSearchModel.PageSize),
                                 serverPaging: true,
                                 serverFiltering: true,
                                 serverSorting: true
                             },
                             pageable: {
                                 refresh: true,
-                                numeric: false,
-                                previousNext: false,
-                                info: false,
+                                pageSizes: [@(Model.ProductPictureSearchModel.AvailablePageSizes)],
                                 @await Html.PartialAsync("_GridPagerMessages")
                             },
                             editable: {
@@ -130,7 +135,7 @@
                             var displayOrder = $("#@Html.IdFor(model => model.AddPictureModel.DisplayOrder)").val();
 
                             if (pictureId == 0) {
-                                alert('Upload picture first');
+                                $("#addProductPictureAlert").click();
                                 return;
                             }
 
@@ -141,8 +146,8 @@
                                 displayOrder: displayOrder,
                                 overrideAltAttribute: overrideAltAttribute,
                                 overrideTitleAttribute: overrideTitleAttribute,
-                                productId: @Model.Id
-                                };
+                                productId: '@Model.Id'
+                            };
                             addAntiForgeryToken(postData);
 
                             $.ajax({
@@ -158,7 +163,7 @@
                                     grid.data('kendoGrid').dataSource.read();
                                 },
                                 error: function(xhr, ajaxOptions, thrownError) {
-                                    alert('Failed to add product picture.');
+                                    $("#productPictureAddAlert").click();
                                     $('#addProductPicture').attr('disabled', false);
                                 }
                             });
@@ -219,3 +224,5 @@
     }
     @await Component.InvokeAsync("AdminWidget", new { widgetZone = AdminWidgetZones.ProductDetailsPicturesBottom, additionalData = Model })
 </div>
+<nop-alert asp-alert-id="addProductPictureAlert" asp-alert-message="@T("Admin.Catalog.Products.Pictures.Alert.AddNew")" />
+<nop-alert asp-alert-id="productPictureAddAlert" asp-alert-message="@T("Admin.Catalog.Products.Pictures.Alert.PictureAdd")" />

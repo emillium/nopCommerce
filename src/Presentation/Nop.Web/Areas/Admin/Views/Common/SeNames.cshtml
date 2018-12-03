@@ -1,16 +1,13 @@
-@model UrlRecordListModel
-@inject AdminAreaSettings adminAreaSettings
-@{
-    var defaultGridPageSize = adminAreaSettings.DefaultGridPageSize;
-    var gridPageSizes = adminAreaSettings.GridPageSizes;
+@model UrlRecordSearchModel
 
+@{
     //page title
     ViewBag.Title = T("Admin.System.SeNames").Text;
     //active menu item (system name)
     Html.SetActiveMenuItemSystemName("Search engine friendly names");
 }
 
-<nop-antiforgery-token/>
+<nop-antiforgery-token />
 <div class="content-header clearfix">
     <h1 class="pull-left">
         @T("Admin.System.SeNames")
@@ -20,6 +17,7 @@
             <i class="fa fa-trash-o"></i>
             @T("Admin.System.SeNames.DeleteSelected")
         </button>
+        <nop-action-confirmation asp-button-id="delete-selected" />
         @await Component.InvokeAsync("AdminWidget", new { widgetZone = AdminWidgetZones.SenamesButtons })
     </div>
 </div>
@@ -34,10 +32,10 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <div class="col-md-4">
-                                    <nop-label asp-for="SeName"/>
+                                    <nop-label asp-for="SeName" />
                                 </div>
                                 <div class="col-md-8">
-                                    <nop-editor asp-for="SeName"/>
+                                    <nop-editor asp-for="SeName" />
                                 </div>
                             </div>
                             <div class="form-group">
@@ -63,7 +61,13 @@
                                             url: "@Html.Raw(Url.Action("SeNames", "Common"))",
                                             type: "POST",
                                             dataType: "json",
-                                            data: additionalData
+                                            data: function() {
+                                                var data = {
+                                                    SeName: $('#@Html.IdFor(model => model.SeName)').val()
+                                                };
+                                                addAntiForgeryToken(data);
+                                                return data;
+                                            }
                                         }
                                     },
                                     schema: {
@@ -76,14 +80,14 @@
                                         // Cancel the changes
                                         this.cancelChanges();
                                     },
-                                    pageSize: @(defaultGridPageSize),
+                                    pageSize: @(Model.PageSize),
                                     serverPaging: true,
                                     serverFiltering: true,
                                     serverSorting: true
                                 },
                                 pageable: {
                                     refresh: true,
-                                    pageSizes: [@(gridPageSizes)],
+                                    pageSizes: [@(Model.AvailablePageSizes)],
                                     @await Html.PartialAsync("_GridPagerMessages")
                                 },
                                 scrollable: false,
@@ -139,6 +143,7 @@
         </div>
     </div>
 </div>
+<nop-alert asp-alert-id="deleteSelectedSeNamesFailed" />
 
 <script>
     var selectedIds = [];
@@ -156,28 +161,18 @@
             return false;
         });
 
-        $("#@Html.IdFor(model => model.SeName)").keydown(function(event) {
-            if (event.keyCode == 13) {
-                $("#search-senames").click();
-                return false;
-            }
-        });
-
         //"delete selected" button
-        $('#delete-selected').click(function(e) {
-            e.preventDefault();
-
+        $("#delete-selected-action-confirmation-submit-button").bind("click", function () {
             var postData = {
                 selectedIds: selectedIds
             };
             addAntiForgeryToken(postData);
-
             $.ajax({
                 cache: false,
                 type: "POST",
                 url: "@(Url.Action("DeleteSelectedSeNames", "Common"))",
                 data: postData,
-                complete: function(data) {
+                complete: function (data) {
                     //reload grid
                     var grid = $('#sename-grid').data('kendoGrid');
                     grid.dataSource.page(1); //new search. Set page size to 1
@@ -186,11 +181,13 @@
                     $('.checkboxGroups').attr('checked', false).change();
                     selectedIds = [];
                 },
-                error: function(xhr, ajaxOptions, thrownError) {
-                    alert(thrownError);
+                error: function (xhr, ajaxOptions, thrownError) {
+                    $('#deleteSelectedSeNamesFailed-info').html(thrownError);
+                    $("#deleteSelectedSeNamesFailed").click();
                 },
                 traditional: true
             });
+            $('#delete-selected-action-confirmation').modal('toggle');
             return false;
         });
 
@@ -216,14 +213,6 @@
             updateMasterCheckbox();
         });
     });
-
-    function additionalData() {
-        var data = {
-            SeName: $('#@Html.IdFor(model => model.SeName)').val()
-        };
-        addAntiForgeryToken(data);
-        return data;
-    }
 
     function onDataBound(e) {
         $('#sename-grid input[type=checkbox][id!=mastercheckbox][class=checkboxGroups]').each(function() {

@@ -1,10 +1,6 @@
-@model QueuedEmailListModel
-@inject AdminAreaSettings adminAreaSettings
+@model QueuedEmailSearchModel
 
 @{
-    var defaultGridPageSize = adminAreaSettings.DefaultGridPageSize;
-    var gridPageSizes = adminAreaSettings.GridPageSizes;
-
     //page title
     ViewBag.Title = T("Admin.System.QueuedEmails").Text;
     //active menu item (system name)
@@ -21,7 +17,8 @@
                 <i class="fa fa-trash-o"></i>
                 @T("Admin.System.QueuedEmails.DeleteSelected")
             </button>
-            <button type="submit" id="delete-all" name="delete-all" class="btn bg-red">
+            <nop-action-confirmation asp-button-id="delete-selected" />
+            <button type="button" id="delete-all" name="delete-all" class="btn bg-red">
                 <i class="fa fa-trash-o"></i>
                 @T("Admin.System.QueuedEmails.DeleteAll")
             </button>
@@ -102,7 +99,7 @@
                                 </div>
                                 <div class="form-group">
                                     <div class="col-md-8 col-md-offset-4">
-                                        <button type="button" id="search-queuedemails" class="btn btn-primary btn-search">
+                                        <button type="button"  id="search-queuedemails" class="btn btn-primary btn-search">
                                             <i class="fa fa-search"></i>
                                             @T("Admin.Common.Search")
                                         </button>
@@ -127,7 +124,18 @@
                                                 url: "@Html.Raw(Url.Action("QueuedEmailList", "QueuedEmail"))",
                                                 type: "POST",
                                                 dataType: "json",
-                                                data: additionalData
+                                                data: function() {
+                                                    var data = {
+                                                        SearchStartDate: $('#@Html.IdFor(model => model.SearchStartDate)').val(),
+                                                        SearchEndDate: $('#@Html.IdFor(model => model.SearchEndDate)').val(),
+                                                        SearchFromEmail: $('#@Html.IdFor(model => model.SearchFromEmail)').val(),
+                                                        SearchToEmail: $('#@Html.IdFor(model => model.SearchToEmail)').val(),
+                                                        SearchLoadNotSent: $('#@Html.IdFor(model => model.SearchLoadNotSent)').is(':checked'),
+                                                        SearchMaxSentTries: $('#@Html.IdFor(model => model.SearchMaxSentTries)').val()
+                                                    };
+                                                    addAntiForgeryToken(data);
+                                                    return data;
+                                                }
                                             }
                                         },
                                         schema: {
@@ -140,14 +148,14 @@
                                             // Cancel the changes
                                             this.cancelChanges();
                                         },
-                                        pageSize: @(defaultGridPageSize),
+                                        pageSize: @(Model.PageSize),
                                         serverPaging: true,
                                         serverFiltering: true,
                                         serverSorting: true
                                     },
                                     pageable: {
                                         refresh: true,
-                                        pageSizes: [@(gridPageSizes)],
+                                        pageSizes: [@(Model.AvailablePageSizes)],
                                         @await Html.PartialAsync("_GridPagerMessages")
                                     },
                                     scrollable: false,
@@ -224,16 +232,7 @@
                                     $('.checkboxGroups').attr('checked', false).change();
                                     selectedIds = [];
                                     return false;
-                                });
-
-                                $("".concat("#@Html.IdFor(model => model.SearchFromEmail),",
-                                    "#@Html.IdFor(model => model.SearchToEmail)")).keydown(function(event) {
-                                        if (event.keyCode === 13) {
-                                            $("#search-queuedemails").click();
-                                            return false;
-                                        }
-                                    });
-
+                                });                                
 
                                 $("#@Html.IdFor(model => model.GoDirectlyToNumber)").keydown(function (event) {
                                     if (event.keyCode === 13) {
@@ -243,20 +242,17 @@
                                 });
 
                                 //"delete selected" button
-                                $('#delete-selected').click(function(e) {
-                                    e.preventDefault();
-
+                                $("#delete-selected-action-confirmation-submit-button").bind("click", function () {
                                     var postData = {
                                         selectedIds: selectedIds
                                     };
                                     addAntiForgeryToken(postData);
-
                                     $.ajax({
                                         cache: false,
                                         type: "POST",
                                         url: "@(Url.Action("DeleteSelected", "QueuedEmail"))",
                                         data: postData,
-                                        complete: function(data) {
+                                        complete: function (data) {
                                             //reload grid
                                             var grid = $('#queuedEmails-grid').data('kendoGrid');
                                             grid.dataSource.page(1); //new search. Set page size to 1
@@ -265,11 +261,13 @@
                                             $('.checkboxGroups').attr('checked', false).change();
                                             selectedIds = [];
                                         },
-                                        error: function(xhr, ajaxOptions, thrownError) {
-                                            alert(thrownError);
+                                        error: function (xhr, ajaxOptions, thrownError) {
+                                            $('#deleteSelectedFailed-info').html(thrownError);
+                                            $("#deleteSelectedFailed").click();
                                         },
                                         traditional: true
                                     });
+                                    $('#delete-selected-action-confirmation').modal('toggle');
                                     return false;
                                 });
 
@@ -296,19 +294,6 @@
                                 });
                             });
 
-                            function additionalData() {
-                                var data = {
-                                    SearchStartDate: $('#@Html.IdFor(model => model.SearchStartDate)').val(),
-                                    SearchEndDate: $('#@Html.IdFor(model => model.SearchEndDate)').val(),
-                                    SearchFromEmail: $('#@Html.IdFor(model => model.SearchFromEmail)').val(),
-                                    SearchToEmail: $('#@Html.IdFor(model => model.SearchToEmail)').val(),
-                                    SearchLoadNotSent: $('#@Html.IdFor(model => model.SearchLoadNotSent)').is(':checked'),
-                                    SearchMaxSentTries: $('#@Html.IdFor(model => model.SearchMaxSentTries)').val()
-                                };
-                                addAntiForgeryToken(data);
-                                return data;
-                            }
-
                             function onDataBound(e) {
 
                                 $('#queuedEmails-grid input[type=checkbox][id!=mastercheckbox][class=checkboxGroups]').each(function() {
@@ -333,3 +318,4 @@
         </div>
     </div>
 </form>
+<nop-alert asp-alert-id="deleteSelectedFailed" />

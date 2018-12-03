@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using Nop.Core.Infrastructure;
 
 namespace Nop.Services.Helpers
 {
@@ -14,17 +15,34 @@ namespace Nop.Services.Helpers
     public class BrowscapXmlHelper
     {
         private readonly List<string> _crawlerUserAgentsRegexp;
+        private readonly INopFileProvider _fileProvider;
 
         /// <summary>
         /// Ctor
         /// </summary>
         /// <param name="userAgentStringsPath">User agent file path</param>
         /// <param name="crawlerOnlyUserAgentStringsPath">User agent with crawlers only file path</param>
-        public BrowscapXmlHelper(string userAgentStringsPath, string crawlerOnlyUserAgentStringsPath)
+        /// <param name="fileProvider">File provider</param>
+        public BrowscapXmlHelper(string userAgentStringsPath, string crawlerOnlyUserAgentStringsPath, INopFileProvider fileProvider)
         {
-            _crawlerUserAgentsRegexp = new List<string>();
+            this._crawlerUserAgentsRegexp = new List<string>();
+            this._fileProvider = fileProvider;
 
             Initialize(userAgentStringsPath, crawlerOnlyUserAgentStringsPath);
+        }
+
+        private static bool IsBrowscapItemIsCrawler(XElement browscapItem)
+        {
+            var el = browscapItem.Elements("item").FirstOrDefault(e => e.Attribute("name")?.Value == "Crawler");
+
+            return el != null && el.Attribute("value")?.Value.ToLower() == "true";
+        }
+
+        private static string ToRegexp(string str)
+        {
+            var sb = new StringBuilder(Regex.Escape(str));
+            sb.Replace("&amp;", "&").Replace("\\?", ".").Replace("\\*", ".*?");
+            return $"^{sb}$";
         }
 
         private void Initialize(string userAgentStringsPath, string crawlerOnlyUserAgentStringsPath)
@@ -32,7 +50,7 @@ namespace Nop.Services.Helpers
             List<XElement> crawlerItems = null;
             var needSaveCrawlerOnly = false;
 
-            if (!string.IsNullOrEmpty(crawlerOnlyUserAgentStringsPath) && File.Exists(crawlerOnlyUserAgentStringsPath))
+            if (!string.IsNullOrEmpty(crawlerOnlyUserAgentStringsPath) && _fileProvider.FileExists(crawlerOnlyUserAgentStringsPath))
             {
                 //try to load crawler list from crawlers only file
                 using (var sr = new StreamReader(crawlerOnlyUserAgentStringsPath))
@@ -63,7 +81,7 @@ namespace Nop.Services.Helpers
                 .Select(e => e.Value)
                 .Select(ToRegexp));
 
-            if ((string.IsNullOrEmpty(crawlerOnlyUserAgentStringsPath) || File.Exists(crawlerOnlyUserAgentStringsPath)) && !needSaveCrawlerOnly)
+            if ((string.IsNullOrEmpty(crawlerOnlyUserAgentStringsPath) || _fileProvider.FileExists(crawlerOnlyUserAgentStringsPath)) && !needSaveCrawlerOnly)
                 return;
 
             //try to write crawlers file
@@ -82,24 +100,11 @@ namespace Nop.Services.Helpers
 
                     root.Add(crawler);
                 }
+
                 root.Save(sw);
             }
         }
-
-        private static bool IsBrowscapItemIsCrawler(XElement browscapItem)
-        {
-            var el = browscapItem.Elements("item").FirstOrDefault(e => e.Attribute("name")?.Value == "Crawler");
-
-            return el != null && el.Attribute("value")?.Value.ToLower() == "true";
-        }
-
-        private static string ToRegexp(string str)
-        {
-            var sb = new StringBuilder(Regex.Escape(str));
-            sb.Replace("&amp;", "&").Replace("\\?", ".").Replace("\\*", ".*?");
-            return $"^{sb}$";
-        }
-
+        
         /// <summary>
         /// Determines whether a user agent is a crawler
         /// </summary>

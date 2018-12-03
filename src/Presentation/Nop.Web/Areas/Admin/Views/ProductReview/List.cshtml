@@ -1,11 +1,9 @@
-﻿@using Nop.Services.Stores
-@model ProductReviewListModel
-@inject AdminAreaSettings adminAreaSettings
+﻿@model ProductReviewSearchModel
+
+@using Nop.Services.Stores
 @inject IStoreService storeService
 
 @{
-    var defaultGridPageSize = adminAreaSettings.DefaultGridPageSize;
-    var gridPageSizes = adminAreaSettings.GridPageSizes;
     var stores = storeService.GetAllStores();
 
     //page title
@@ -35,6 +33,7 @@
                 <i class="fa fa-trash-o"></i>
                 @T("Admin.Catalog.ProductReviews.DeleteSelected")
             </button>
+            <nop-action-confirmation asp-button-id="delete-selected" />
         }
         @await Component.InvokeAsync("AdminWidget", new { widgetZone = AdminWidgetZones.ProductReviewListButtons })
     </div>
@@ -151,7 +150,18 @@
                                             url: "@Html.Raw(Url.Action("List", "ProductReview"))",
                                             type: "POST",
                                             dataType: "json",
-                                            data: additionalData
+                                            data: function() {
+                                                var data = {
+                                                    CreatedOnFrom: $('#@Html.IdFor(model => model.CreatedOnFrom)').val(),
+                                                    CreatedOnTo: $('#@Html.IdFor(model => model.CreatedOnTo)').val(),
+                                                    SearchText: $('#@Html.IdFor(model => model.SearchText)').val(),
+                                                    SearchStoreId: $('#@Html.IdFor(model => model.SearchStoreId)').val(),
+                                                    SearchProductId: $('#@Html.IdFor(model => model.SearchProductId)').val(),
+                                                    SearchApprovedId: $('#SearchApprovedId').val()
+                                                };
+                                                addAntiForgeryToken(data);
+                                                return data;
+                                            }
                                         }
                                     },
                                     schema: {
@@ -164,14 +174,14 @@
                                         // Cancel the changes
                                         this.cancelChanges();
                                     },
-                                    pageSize: @(defaultGridPageSize),
+                                    pageSize: @(Model.PageSize),
                                     serverPaging: true,
                                     serverFiltering: true,
                                     serverSorting: true
                                 },
                                 pageable: {
                                     refresh: true,
-                                    pageSizes: [@(gridPageSizes)],
+                                    pageSizes: [@(Model.AvailablePageSizes)],
                                     @await Html.PartialAsync("_GridPagerMessages")
                                 },
                                 scrollable: false,
@@ -282,7 +292,8 @@
                                         grid.dataSource.read();
                                     },
                                     error: function(xhr, ajaxOptions, thrownError) {
-                                        alert(thrownError);
+                                        $('#approveSelectedFailed-info').html(thrownError);
+                                        $("#approveSelectedFailed").click();
                                     },
                                     traditional: true
                                 });
@@ -309,7 +320,8 @@
                                         grid.dataSource.read();
                                     },
                                     error: function(xhr, ajaxOptions, thrownError) {
-                                        alert(thrownError);
+                                        $('#disapproveSelectedFailed-info').html(thrownError);
+                                        $("#disapproveSelectedFailed").click();
                                     },
                                     traditional: true
                                 });
@@ -317,32 +329,29 @@
                             });
 
                             //"delete selected" button
-                            $('#delete-selected').click(function(e) {
-                                e.preventDefault();
-
+                            $("#delete-selected-action-confirmation-submit-button").bind("click", function () {
                                 var postData = {
                                     selectedIds: selectedIds
                                 };
                                 addAntiForgeryToken(postData);
-
                                 $.ajax({
                                     cache: false,
                                     type: "POST",
                                     url: "@(Url.Action("DeleteSelected", "ProductReview"))",
                                     data: postData,
-                                    complete: function(data) {
+                                    complete: function (data) {
                                         //reload grid
                                         var grid = $('#productreviews-grid').data('kendoGrid');
                                         grid.dataSource.read();
                                     },
-                                    error: function(xhr, ajaxOptions, thrownError) {
-                                        alert(thrownError);
-                                    },
-                                    traditional: true
+                                    error: function (xhr, ajaxOptions, thrownError) {
+                                        $('#deleteSelectedFailed-info').html(thrownError);
+                                        $("#deleteSelectedFailed").click();
+                                    }
                                 });
+                                $('#delete-selected-action-confirmation').modal('toggle');
                                 return false;
                             });
-
 
                             $('#mastercheckbox').click(function() {
                                 $('.checkboxGroups').attr('checked', $(this).is(':checked')).change();
@@ -370,19 +379,6 @@
                             });
                         });
 
-                        function additionalData() {
-                            var data = {
-                                CreatedOnFrom: $('#@Html.IdFor(model => model.CreatedOnFrom)').val(),
-                                CreatedOnTo: $('#@Html.IdFor(model => model.CreatedOnTo)').val(),
-                                SearchText: $('#@Html.IdFor(model => model.SearchText)').val(),
-                                SearchStoreId: $('#@Html.IdFor(model => model.SearchStoreId)').val(),
-                                SearchProductId: $('#@Html.IdFor(model => model.SearchProductId)').val(),
-                                SearchApprovedId: $('#SearchApprovedId').val()
-                            };
-                            addAntiForgeryToken(data);
-                            return data;
-                        }
-
                         function onDataBound(e) {
 
                             $('#productreviews-grid input[type=checkbox][id!=mastercheckbox][class=checkboxGroups]').each(function() {
@@ -407,3 +403,6 @@
         </div>
     </div>
 </div>
+<nop-alert asp-alert-id="approveSelectedFailed" />
+<nop-alert asp-alert-id="disapproveSelectedFailed" />
+<nop-alert asp-alert-id="deleteSelectedFailed" />

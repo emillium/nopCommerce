@@ -1,11 +1,25 @@
 ﻿using Nop.Web.Areas.Admin.Models.Common;
 using Nop.Web.Framework.Mvc.ModelBinding;
-using Nop.Web.Framework.Mvc.Models;
+using Nop.Web.Framework.Models;
 
 namespace Nop.Web.Areas.Admin.Models.Settings
 {
-    public partial class ShippingSettingsModel : BaseNopModel
+    /// <summary>
+    /// Represents a shipping settings model
+    /// </summary>
+    public partial class ShippingSettingsModel : BaseNopModel, ISettingsModel
     {
+        #region Ctor
+
+        public ShippingSettingsModel()
+        {
+            ShippingOriginAddress = new AddressModel();
+        }
+
+        #endregion
+
+        #region Properties
+
         public int ActiveStoreScopeConfiguration { get; set; }
         
         [NopResourceDisplayName("Admin.Configuration.Settings.Shipping.ShipToSameAddress")]
@@ -19,6 +33,10 @@ namespace Nop.Web.Areas.Admin.Models.Settings
         [NopResourceDisplayName("Admin.Configuration.Settings.Shipping.DisplayPickupPointsOnMap")]
         public bool DisplayPickupPointsOnMap { get; set; }
         public bool DisplayPickupPointsOnMap_OverrideForStore { get; set; }
+
+        [NopResourceDisplayName("Admin.Configuration.Settings.Shipping.IgnoreAdditionalShippingChargeForPickUpInStore")]
+        public bool IgnoreAdditionalShippingChargeForPickUpInStore { get; set; }
+        public bool IgnoreAdditionalShippingChargeForPickUpInStore_OverrideForStore { get; set; }
 
         [NopResourceDisplayName("Admin.Configuration.Settings.Shipping.GoogleMapsApiKey")]
         public string GoogleMapsApiKey { get; set; }
@@ -72,5 +90,7 @@ namespace Nop.Web.Areas.Admin.Models.Settings
         public bool ShippingOriginAddress_OverrideForStore { get; set; }
 
         public string PrimaryStoreCurrencyCode { get; set; }
+
+        #endregion
     }
 }

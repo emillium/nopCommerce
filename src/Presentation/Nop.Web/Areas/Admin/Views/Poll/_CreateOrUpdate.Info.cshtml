@@ -69,20 +69,49 @@
             </div>
             <div class="form-group">
                 <div class="col-md-3">
-                    <nop-label asp-for="StartDate" />
+                    <nop-label asp-for="StartDateUtc" />
                 </div>
                 <div class="col-md-9">
-                    <nop-editor asp-for="StartDate" />
-                    <span asp-validation-for="StartDate"></span>
+                    <nop-editor asp-for="StartDateUtc" />
+                    <span asp-validation-for="StartDateUtc"></span>
                 </div>
             </div>
             <div class="form-group">
                 <div class="col-md-3">
-                    <nop-label asp-for="EndDate" />
+                    <nop-label asp-for="EndDateUtc" />
                 </div>
                 <div class="col-md-9">
-                    <nop-editor asp-for="EndDate" />
-                    <span asp-validation-for="EndDate"></span>
+                    <nop-editor asp-for="EndDateUtc" />
+                    <span asp-validation-for="EndDateUtc"></span>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-3">
+                    <nop-label asp-for="SelectedStoreIds" />
+                </div>
+                <div class="col-md-9">
+                    <nop-select asp-for="SelectedStoreIds" asp-items="Model.AvailableStores" asp-multiple="true" />
+                    <script>
+                        $(document).ready(function() {
+                            var storesIdsInput = $('#@Html.IdFor(model => model.SelectedStoreIds)').data("kendoMultiSelect");
+                            storesIdsInput.setOptions({
+                                autoClose: false,
+                                filter: "contains"
+                            });
+
+                            @if (!Model.AvailableStores.Any())
+                            {
+                                <text>
+                                    storesIdsInput.setOptions({
+                                        enable: false,
+                                        placeholder: 'No stores available'
+                                    });
+                                    storesIdsInput._placeholder();
+                                    storesIdsInput._enable();
+                                </text>
+                            }
+                        });
+                    </script>
                 </div>
             </div>
         </div>

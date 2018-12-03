@@ -1,9 +1,6 @@
-@model AffiliateListModel
-@inject AdminAreaSettings adminAreaSettings
-@{
-    var defaultGridPageSize = adminAreaSettings.DefaultGridPageSize;
-    var gridPageSizes = adminAreaSettings.GridPageSizes;
+@model AffiliateSearchModel
 
+@{
     //page title
     ViewBag.Title = T("Admin.Affiliates").Text;
     //active menu item (system name)
@@ -128,7 +125,18 @@
                                             url: "@Html.Raw(Url.Action("List", "Affiliate"))",
                                             type: "POST",
                                             dataType: "json",
-                                            data: additionalData
+                                            data: function() {
+                                                var data = {
+                                                    SearchFirstName: $('#@Html.IdFor(model => model.SearchFirstName)').val(),
+                                                    SearchLastName: $('#@Html.IdFor(model => model.SearchLastName)').val(),
+                                                    SearchFriendlyUrlName: $('#@Html.IdFor(model => model.SearchFriendlyUrlName)').val(),
+                                                    LoadOnlyWithOrders: $('#@Html.IdFor(model => model.LoadOnlyWithOrders)').is(':checked'),
+                                                    OrdersCreatedFromUtc: $('#@Html.IdFor(model => model.OrdersCreatedFromUtc)').val(),
+                                                    OrdersCreatedToUtc: $('#@Html.IdFor(model => model.OrdersCreatedToUtc)').val()
+                                                };
+                                                addAntiForgeryToken(data);
+                                                return data;
+                                            }
                                         }
                                     },
                                     schema: {
@@ -141,14 +149,14 @@
                                         // Cancel the changes
                                         this.cancelChanges();
                                     },
-                                    pageSize: @(defaultGridPageSize),
+                                    pageSize: @(Model.PageSize),
                                     serverPaging: true,
                                     serverFiltering: true,
                                     serverSorting: true
                                 },
                                 pageable: {
                                     refresh: true,
-                                    pageSizes: [@(gridPageSizes)],
+                                    pageSizes: [@(Model.AvailablePageSizes)],
                                     @await Html.PartialAsync("_GridPagerMessages")
                                 },
                                 editable: {
@@ -194,29 +202,6 @@
                                 return false;
                             });
                         });
-
-
-                        $("".concat("#@Html.IdFor(model => model.SearchFirstName),",
-                            "#@Html.IdFor(model => model.SearchLastName),",
-                            "#@Html.IdFor(model => model.SearchFriendlyUrlName)")).keydown(function(event) {
-                                if (event.keyCode === 13) {
-                                    $("#search-affiliates").click();
-                                    return false;
-                                }
-                            });
-
-                        function additionalData() {
-                            var data = {
-                                SearchFirstName: $('#@Html.IdFor(model => model.SearchFirstName)').val(),
-                                SearchLastName: $('#@Html.IdFor(model => model.SearchLastName)').val(),
-                                SearchFriendlyUrlName: $('#@Html.IdFor(model => model.SearchFriendlyUrlName)').val(),
-                                LoadOnlyWithOrders: $('#@Html.IdFor(model => model.LoadOnlyWithOrders)').is(':checked'),
-                                OrdersCreatedFromUtc: $('#@Html.IdFor(model => model.OrdersCreatedFromUtc)').val(),
-                                OrdersCreatedToUtc: $('#@Html.IdFor(model => model.OrdersCreatedToUtc)').val()
-                            };
-                            addAntiForgeryToken(data);
-                            return data;
-                        }
                     </script>
                 </div>
             </div>
